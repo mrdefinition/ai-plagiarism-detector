@@ -1,0 +1,55 @@
+# This workflow automates the CI process for the AI Plagiarism Detector project.
+name: AI Plagiarism Detector CI
+
+# Controls when the workflow will run. It runs on pushes or pull requests to the main branch,
+# and can also be triggered manually from the Actions tab.
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs.
+jobs:
+  # The "build" job handles all the steps of the CI pipeline.
+  build:
+    # This job runs on the latest version of Ubuntu.
+    runs-on: ubuntu-latest
+    
+    # This strategy creates a build matrix to run the steps for different Python versions.
+    strategy:
+      matrix:
+        python-version: [3.9, 3.10, 3.11]
+
+    # The steps represent a sequence of tasks that will be executed as part of the job.
+    steps:
+      # Step 1: Checks out your repository under $GITHUB_WORKSPACE.
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Step 2: Sets up a specific Python version from the build matrix.
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      # Step 3: Installs the required dependencies.
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest flake8
+
+      # Step 4: Runs flake8 to lint the code for style and syntax errors.
+      - name: Lint with flake8
+        run: |
+          # Exit if Python syntax errors or undefined names
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          # Exit if too many style errors (ignore complexity for now)
+          flake8 . --count --exit-zero --max-complexity=15 --max-line-length=120 --statistics
+
+      # Step 5: Runs the pytest suite to check for functional bugs.
+      - name: Run tests
+        run: |
+          pytest --maxfail=1 --disable-warnings -q
