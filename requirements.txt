@@ -1,0 +1,14 @@
+﻿streamlit
+torch
+transformers
+numpy
+pandas
+scikit-learn
+matplotlib
+nltk
+spacy
+pdfminer.six
+python-docx
+reportlab
+pytest
+flake8
