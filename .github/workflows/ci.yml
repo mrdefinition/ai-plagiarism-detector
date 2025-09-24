@@ -1,36 +1,55 @@
-# This is a basic workflow to help you get started with Actions
+# This workflow automates the CI process for the AI Plagiarism Detector project.
+name: AI Plagiarism Detector CI
 
-name: CI
-
-# Controls when the workflow will run
+# Controls when the workflow will run. It runs on pushes or pull requests to the main branch,
+# and can also be triggered manually from the Actions tab.
 on:
-  # Triggers the workflow on push or pull request events but only for the "main" branch
   push:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
-
-  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+# A workflow run is made up of one or more jobs.
 jobs:
-  # This workflow contains a single job called "build"
+  # The "build" job handles all the steps of the CI pipeline.
   build:
-    # The type of runner that the job will run on
+    # This job runs on the latest version of Ubuntu.
     runs-on: ubuntu-latest
+    
+    # This strategy creates a build matrix to run the steps for different Python versions.
+    strategy:
+      matrix:
+        python-version: [3.9, 3.10, 3.11]
 
-    # Steps represent a sequence of tasks that will be executed as part of the job
+    # The steps represent a sequence of tasks that will be executed as part of the job.
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v4
+      # Step 1: Checks out your repository under $GITHUB_WORKSPACE.
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      # Runs a single command using the runners shell
-      - name: Run a one-line script
-        run: echo Hello, world!
+      # Step 2: Sets up a specific Python version from the build matrix.
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
 
-      # Runs a set of commands using the runners shell
-      - name: Run a multi-line script
+      # Step 3: Installs the required dependencies.
+      - name: Install dependencies
         run: |
-          echo Add other actions to build,
-          echo test, and deploy your project.
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest flake8
+
+      # Step 4: Runs flake8 to lint the code for style and syntax errors.
+      - name: Lint with flake8
+        run: |
+          # Exit if Python syntax errors or undefined names
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          # Exit if too many style errors (ignore complexity for now)
+          flake8 . --count --exit-zero --max-complexity=15 --max-line-length=120 --statistics
+
+      # Step 5: Runs the pytest suite to check for functional bugs.
+      - name: Run tests
+        run: |
+          pytest --maxfail=1 --disable-warnings -q
