@@ -1,6 +1,4 @@
 ﻿# GPT-2 or other model loader
-def test_placeholder():
-    assert True
 from transformers import GPT2Tokenizer, GPT2LMHeadModel
 
 _tokenizer = None
@@ -18,3 +16,5 @@ def load_model():
         _model = GPT2LMHeadModel.from_pretrained("gpt2")
         _model.eval()  # inference mode only
     return _tokenizer, _model
+
+

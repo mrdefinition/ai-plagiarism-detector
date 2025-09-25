@@ -1,5 +1,4 @@
-﻿# Text cleaning & stylometry functions
-import re
+﻿import re
 import string
 import nltk
 from collections import Counter

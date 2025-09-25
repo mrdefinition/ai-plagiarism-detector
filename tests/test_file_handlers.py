@@ -1,38 +1,57 @@
 import os
-import pytest
-from app.file_handlers import extract_text_from_txt, extract_text_from_docx, extract_text_from_pdf
-from docx import Document
-from reportlab.pdfgen import canvas
+import docx
+from pdfminer.high_level import extract_text as extract_pdf_text
+import re
 
-SAMPLES_DIR = "data/samples"
+def extract_text_from_txt(file_path):
+    """
+    Extracts text from a .txt file.
+    """
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            return f.read()
+    except Exception as e:
+        return f"Error reading TXT file: {e}"
 
-@pytest.fixture(scope="module", autouse=True)
-def setup_sample_files():
-    os.makedirs(SAMPLES_DIR, exist_ok=True)
+def extract_text_from_docx(file_path):
+    """
+    Extracts text from a .docx file.
+    """
+    try:
+        doc = docx.Document(file_path)
+        full_text = []
+        for para in doc.paragraphs:
+            full_text.append(para.text)
+        return '\n'.join(full_text)
+    except Exception as e:
+        return f"Error reading DOCX file: {e}"
 
-    # TXT
-    with open(os.path.join(SAMPLES_DIR, "sample.txt"), "w", encoding="utf-8") as f:
-        f.write("This is a sample TXT file.")
+def extract_text_from_pdf(file_path):
+    """
+    Extracts text from a .pdf file using pdfminer.six.
+    """
+    try:
+        # pdfminer.six can extract text directly from the file path
+        text = extract_pdf_text(file_path)
+        # Clean up extra spaces, newlines, and form-feed characters
+        return re.sub(r'[\s\n\f]+', ' ', text).strip()
+    except Exception as e:
+        return f"Error reading PDF file: {e}"
 
-    # DOCX
-    doc = Document()
-    doc.add_paragraph("This is a sample DOCX file.")
-    doc.save(os.path.join(SAMPLES_DIR, "sample.docx"))
+def extract_text(file_path):
+    """
+    A dispatcher function that determines the file type and calls the appropriate handler.
+    """
+    if not os.path.exists(file_path):
+        return "Error: File not found."
+    
+    file_extension = os.path.splitext(file_path)[1].lower()
 
-    # PDF
-    pdf_path = os.path.join(SAMPLES_DIR, "sample.pdf")
-    c = canvas.Canvas(pdf_path)
-    c.drawString(100, 750, "This is a sample PDF file.")
-    c.save()
-
-def test_extract_text_from_txt():
-    text = extract_text_from_txt(os.path.join(SAMPLES_DIR, "sample.txt"))
-    assert "sample TXT" in text
-
-def test_extract_text_from_docx():
-    text = extract_text_from_docx(os.path.join(SAMPLES_DIR, "sample.docx"))
-    assert "sample DOCX" in text
-
-def test_extract_text_from_pdf():
-    text = extract_text_from_pdf(os.path.join(SAMPLES_DIR, "sample.pdf"))
-    assert "sample PDF" in text
+    if file_extension == '.txt':
+        return extract_text_from_txt(file_path)
+    elif file_extension == '.docx':
+        return extract_text_from_docx(file_path)
+    elif file_extension == '.pdf':
+        return extract_text_from_pdf(file_path)
+    else:
+        return "Unsupported file type"

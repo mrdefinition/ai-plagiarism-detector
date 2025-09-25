@@ -1,58 +1,53 @@
-﻿# File upload extractors (PDF, DOCX, TXT)
-from pdfminer.high_level import extract_text as extract_pdf_text
-from docx import Document
+﻿import os
+from typing import Optional
 
-def extract_text_from_pdf(file_path_or_buffer):
-    """
-    Extract text from a PDF file.
-    
-    Args:
-        file_path_or_buffer (str or file-like): PDF file path or uploaded file buffer
-    
-    Returns:
-        str: Extracted text
-    """
+# TXT
+def extract_text_from_txt(file_path: str) -> str:
+    """Extract text from a plain text (.txt) file."""
     try:
-        text = extract_pdf_text(file_path_or_buffer)
-        return text.strip()
+        with open(file_path, "r", encoding="utf-8") as f:
+            return f.read()
     except Exception as e:
-        return f"❌ Error reading PDF: {e}"
+        return f"[Error reading TXT file: {e}]"
 
-def extract_text_from_docx(file_path_or_buffer):
-    """
-    Extract text from a DOCX file.
-    
-    Args:
-        file_path_or_buffer (str or file-like): DOCX file path or uploaded file buffer
-    
-    Returns:
-        str: Extracted text
-    """
-    try:
-        doc = Document(file_path_or_buffer)
-        text = "\n".join([para.text for para in doc.paragraphs])
-        return text.strip()
-    except Exception as e:
-        return f"❌ Error reading DOCX: {e}"
 
-def extract_text_from_txt(file_path_or_buffer):
-    """
-    Extract text from a plain TXT file.
-    
-    Args:
-        file_path_or_buffer (str or file-like): TXT file path or uploaded file buffer
-    
-    Returns:
-        str: Extracted text
-    """
+# DOCX
+def extract_text_from_docx(file_path: str) -> str:
+    """Extract text from a Word (.docx) file."""
     try:
-        if hasattr(file_path_or_buffer, "read"):  # file-like (uploaded)
-            content = file_path_or_buffer.read()
-            if isinstance(content, bytes):
-                content = content.decode("utf-8", errors="ignore")
-        else:  # path
-            with open(file_path_or_buffer, "r", encoding="utf-8", errors="ignore") as f:
-                content = f.read()
-        return content.strip()
+        from docx import Document
+        doc = Document(file_path)
+        return "\n".join([para.text for para in doc.paragraphs])
     except Exception as e:
-        return f"❌ Error reading TXT: {e}"
+        return f"[Error reading DOCX file: {e}]"
+
+
+# PDF
+def extract_text_from_pdf(file_path: str) -> str:
+    """Extract text from a PDF file."""
+    try:
+        import PyPDF2
+        text = []
+        with open(file_path, "rb") as f:
+            reader = PyPDF2.PdfReader(f)
+            for page in reader.pages:
+                text.append(page.extract_text() or "")
+        return "\n".join(text)
+    except Exception as e:
+        return f"[Error reading PDF file: {e}]"
+
+
+# Dispatcher
+def extract_text(file_path: str) -> Optional[str]:
+    """Dispatch to correct handler based on file extension."""
+    _, ext = os.path.splitext(file_path)
+    ext = ext.lower()
+
+    if ext == ".txt":
+        return extract_text_from_txt(file_path)
+    elif ext == ".docx":
+        return extract_text_from_docx(file_path)
+    elif ext == ".pdf":
+        return extract_text_from_pdf(file_path)
+    else:
+        return f"[Unsupported file type: {ext}]"

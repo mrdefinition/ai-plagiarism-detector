@@ -1,3 +1,6 @@
+import sys, os
+# Add the project root (A.I.P) to PYTHONPATH
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from app.text_processing import clean_text, tokenize_text, compute_stylometric_features
 
 def test_clean_text_removes_spaces_and_lowercases():
